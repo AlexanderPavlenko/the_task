@@ -12,14 +12,14 @@ default:
     <<: *common
     database: the_task_test
 
-statistics:
-  development: &common
-    adapter: sqlite3
-    database: statistics_development
-    min_messages: WARNING
-    pool: 5
-    encoding: unicode
-
-  test:
-    <<: *common
-    database: statistics
+#statistics:
+#  development: &common
+#    adapter: sqlite3
+#    database: statistics_development
+#    min_messages: WARNING
+#    pool: 5
+#    encoding: unicode
+#
+#  test:
+#    <<: *common
+#    database: statistics
