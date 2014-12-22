@@ -10,7 +10,7 @@ default:
 
   test:
     <<: *common
-    database: the_task_test
+    database: ":memory:"
 
 #statistics:
 #  development: &common

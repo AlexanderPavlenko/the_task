@@ -1,5 +1,7 @@
 class LocalAccount
 
+  attr_reader :owner
+
   def initialize(owner:)
     @owner = owner
   end
@@ -9,11 +11,7 @@ class LocalAccount
   end
 
   def update_balance!(amount)
-    if amount > 0
-      @owner.update!("local_account_amount = local_account_amount + ?", amount)
-    elsif amount < 0
-      @owner.update!("local_account_amount = local_account_amount - ?", amount)
-    end
+    @owner.increment! :local_account_amount, amount
   end
 
   def can_pay?(amount)

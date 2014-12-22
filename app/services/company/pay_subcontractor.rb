@@ -3,7 +3,7 @@ module Services
     class PaySubcontractor
 
       def call(job:)
-        SubcontractorPayout.create!(job: job)
+        SubcontractorPayout.create(job: job)
       end
     end
   end

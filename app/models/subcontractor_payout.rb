@@ -3,7 +3,7 @@ class SubcontractorPayout < ActiveRecord::Base
   has_one :local_account_transaction, as: :transactionable
 
   before_validation do
-    self.amount ||= job.subcontractor_payout_amount if job
+    self.amount ||= job.subcontractor_payout_amount if job && job.ended?
   end
 
   validates :job, presence: true
@@ -22,7 +22,7 @@ class SubcontractorPayout < ActiveRecord::Base
 
   def job_completeness
     unless job.ended?
-      errors.add :base, :job_is_not_ended
+      errors.add :job, :job_is_not_ended
     end
   end
 end

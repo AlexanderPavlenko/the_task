@@ -4,7 +4,7 @@ module Services
 
       def call(job:, end_date:)
         Job.transaction do
-          job.update! end_date: end_date
+          job.update_attributes! end_date: end_date
           job.handle_due_amount_change!
         end
         job

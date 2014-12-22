@@ -3,6 +3,9 @@ class Job < ActiveRecord::Base
   belongs_to :subcontractor
   has_many :invoices
 
+  SubcontractorRequiredError = Class.new(StandardError)
+  EndDateRequiredError = Class.new(StandardError)
+
   STATES = (1..2).to_a.freeze
   ACCEPTED = 1
   REJECTED = 2
@@ -22,10 +25,11 @@ class Job < ActiveRecord::Base
   end
 
   def reject!
-    update!(state: REJECTED)
+    update_attributes!(state: REJECTED)
   end
 
   def due_amount
+    raise EndDateRequiredError unless end_date
     client_rate * (end_date - start_date).days
   end
 
@@ -34,6 +38,7 @@ class Job < ActiveRecord::Base
   end
 
   def overdue_amount
+    raise EndDateRequiredError unless end_date
     overdue_days = (Date.today - end_date).days
     overdue_days > 0 ? client_rate * overdue_days : 0
   end
@@ -47,6 +52,8 @@ class Job < ActiveRecord::Base
   end
 
   def subcontractor_payout_amount
+    raise SubcontractorRequiredError unless subcontractor
+    raise EndDateRequiredError unless end_date
     subcontractor.rate * (end_date - start_date).days
   end
 
@@ -65,7 +72,7 @@ class Job < ActiveRecord::Base
     amount_difference = paid_amount - due_amount # NOTE: overdue is ignored
     if amount_difference > 0
       send_refund! amount: amount_difference
-    elsif difference < 0
+    elsif amount_difference < 0
       send_invoice! amount: -amount_difference
     end
   end
@@ -83,13 +90,13 @@ class Job < ActiveRecord::Base
 
   def overdue_invoices_absence
     if client && client.invoices.overdue.present?
-      errors.add :base, :overdue_invoices_are_present
+      errors.add :client, :overdue_invoices_are_present
     end
   end
 
   def subcantractor_busyness
     if subcontractor && subcontractor.busy?
-      errors.add :base, :subcontractor_is_busy
+      errors.add :subcontractor, :subcontractor_is_busy
     end
   end
 end
