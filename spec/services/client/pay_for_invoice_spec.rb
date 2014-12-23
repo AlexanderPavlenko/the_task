@@ -19,11 +19,9 @@ describe Services::Client::PayForInvoice do
     }.to(
       change { LocalAccountTransaction.count }.by 1
     )
-    expect(
-      @client.reload.local_account_amount
-    ).to eq 0
-    expect(
-      @invoice.reload.state
-    ).to eq Invoice::PAID
+    expect(@client.reload.local_account_amount).to eq 0
+    @invoice.reload
+    expect(@invoice.state).to eq Invoice::PAID
+    expect(@invoice.paid_at.change(usec: 0, sec: 0)).to eq Time.now.change(usec: 0, sec: 0)
   end
 end

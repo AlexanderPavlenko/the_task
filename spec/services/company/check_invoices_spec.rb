@@ -7,6 +7,8 @@ describe Services::Company::CheckInvoices do
     @invoice = create(:invoice, job: @job)
     expect(@invoice.state).to eq Invoice::PENDING
     Services::Company::CheckInvoices.new.call
-    expect(@invoice.reload.state).to eq Invoice::OVERDUE
+    @invoice.reload
+    expect(@invoice.state).to eq Invoice::OVERDUE
+    expect(@invoice.overdue_at).to eq @job.end_date
   end
 end

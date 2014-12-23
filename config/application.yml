@@ -3,6 +3,7 @@ development: &common
   autoload_paths:
     - app/models
     - app/services
+    - lib
   default_timezone: 'Pacific Time (US & Canada)'
   discount_after_N_jobs: [3, 9.99]
 

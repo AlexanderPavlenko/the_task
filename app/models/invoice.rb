@@ -1,5 +1,7 @@
 class Invoice < ActiveRecord::Base
   belongs_to :job
+  has_one :client, through: :job
+  has_one :subcontractor, through: :job
   has_one :local_account_transaction, as: :transactionable
 
   STATES = (1..4).to_a.freeze
@@ -18,10 +20,10 @@ class Invoice < ActiveRecord::Base
   validates :amount, presence: true, numericality: {greater_than: 0}
   validates :state, presence: true, inclusion: STATES
 
-  scope :paid, -> { where(state: PAID) }
+  scope :paid, -> { where(Invoice.arel_table[:paid_at].not_eq nil) }
   scope :unpaid, -> { where(state: [PENDING, OVERDUE]) }
   scope :pending, -> { where(state: PENDING) }
-  scope :overdue, -> { where(state: OVERDUE) }
+  scope :overdue, -> { where(Invoice.arel_table[:overdue_at].not_eq nil) }
   scope :canceled, -> { where(state: CANCELED) }
 
   def pay_from_client_local_account!
@@ -31,7 +33,7 @@ class Invoice < ActiveRecord::Base
       raise NotEnoughFundsError
     end
     Invoice.transaction do
-      update_attributes! state: PAID
+      update_attributes! state: PAID, paid_at: Time.now
       LocalAccountTransaction.create!(
         transactionable: self,
         amount: -amount,
@@ -45,8 +47,8 @@ class Invoice < ActiveRecord::Base
   end
 
   def self.check_for_overdue!
-    pending.where(job_id: Job.ended).find_each do |invoice|
-      invoice.update_attributes! state: OVERDUE
+    pending.where(job_id: Job.ended).includes(:job).find_each do |invoice|
+      invoice.update_attributes! state: OVERDUE, overdue_at: invoice.job.end_date
     end
   end
 end

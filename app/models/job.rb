@@ -2,6 +2,7 @@ class Job < ActiveRecord::Base
   belongs_to :client
   belongs_to :subcontractor
   has_many :invoices
+  has_many :subcontractor_payouts
 
   SubcontractorRequiredError = Class.new(StandardError)
   EndDateRequiredError = Class.new(StandardError)
@@ -18,6 +19,8 @@ class Job < ActiveRecord::Base
   validate :overdue_invoices_absence
   validate :subcantractor_busyness
 
+  scope :accepted, -> { where(state: ACCEPTED) }
+  scope :rejected, -> { where(state: REJECTED) }
   scope :ended, -> { where(Job.arel_table[:end_date].lteq(Date.today)) }
 
   def ended?
@@ -43,8 +46,21 @@ class Job < ActiveRecord::Base
     overdue_days > 0 ? client_rate * overdue_days : 0
   end
 
-  def invoice_amount
-    due_amount + overdue_amount - paid_amount
+  def invoice_amount(with_discount: true)
+    full_amount = due_amount + overdue_amount - paid_amount
+    if with_discount
+      full_amount - discount_amount(full_amount)
+    else
+      full_amount
+    end
+  end
+
+  def discount_amount(full_amount = nil)
+    if discount.to_f > 0
+      (full_amount || invoice_amount(with_discount: false)) * discount / 100
+    else
+      0
+    end
   end
 
   def refund_amount
@@ -80,8 +96,9 @@ class Job < ActiveRecord::Base
   def standard_discount
     # "Client may loose discount if one of their invoices is marked as overdue"
     # — but he cannot create new jobs, when one of their invoices is marked as overdue
+    # Wait, does client loose discount only on the next jobs or including all currently unpaid?
     n, discount = Framework.app.config['discount_after_N_jobs']
-    if client.jobs.ended.count >= n
+    if client.invoices.paid.count >= n
       discount
     else
       0
