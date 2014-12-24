@@ -27,21 +27,21 @@ module Statistics
     result
   end
 
-  # @return [Array] [Polynomial, number_of_months]
-  def revenue_prediction_polynomial
+  def predicted_revenue
     data = revenue_by_months
     data.each_with_index { |item, i|
-      # item[0] = item[0].to_i
-      item[0] = i + 1
+      item[0] = item[0].to_i
       if i > 0
         data[i][1] += data[i-1][1]
       end
     }
-    [LagrangePolynomial.build(data), data.size]
-  end
-
-  def predicted_revenue(polynomial, after_months)
-    polynomial[0].substitute(polynomial[1] + after_months) # .substitute(date.to_time.to_i)
+    n = data.size.to_f
+    t_average = data.inject(0) { |a, e| a + e[0] } / n
+    y_average = data.inject(0) { |a, e| a + e[1] } / n
+    a1 = data.map { |e| e[1] * e[0] - n * y_average * t_average }.reduce(:+) /
+      data.map { |e| e[0]**2 - n * t_average**2 }.reduce(:+)
+    a0 = y_average - a1 * t_average
+    -> (t) { a0 + a1 * t.to_time.to_i }
   end
 
   def best_clients(top: 5, timeframe: default_timeframe)

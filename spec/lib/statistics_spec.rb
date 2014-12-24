@@ -85,20 +85,16 @@ describe Statistics do
       end
     end
     @current_revenue = Statistics.revenue
-    @polynomial = Statistics.revenue_prediction_polynomial
-    puts @polynomial[0].instance_variable_get(:@coefs).reverse.map(&:to_f).inspect
+    @predicted_revenue = Statistics.predicted_revenue
 
     expect(
-      @polynomial[1]
-    ).to be > 1
-    expect(
-      Statistics.predicted_revenue(@polynomial, -1)
+      @predicted_revenue.(Date.today - 2.month)
     ).to be < @current_revenue
     expect(
-      @next_month_revenue = Statistics.predicted_revenue(@polynomial, 1)
+      @next_month_revenue = @predicted_revenue.(Date.today.next_month)
     ).to be > @current_revenue
     expect(
-      @next_year_revenue = Statistics.predicted_revenue(@polynomial, 12)
+      @next_year_revenue = @predicted_revenue.(Date.today.next_year)
     ).to be > @next_month_revenue
   end
 end
