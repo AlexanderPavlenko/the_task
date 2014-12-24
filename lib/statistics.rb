@@ -1,6 +1,10 @@
 module Statistics
   extend self
 
+  def rejection_rate
+    Job.rejected.count.to_f / Job.count
+  end
+
   def gross_sales
     Invoice.paid.sum(:amount)
   end
@@ -9,12 +13,35 @@ module Statistics
     gross_sales - SubcontractorPayout.sum(:amount)
   end
 
-  def rejection_rate
-    Job.rejected.count.to_f / Job.count
+  def revenue_by_months
+    start = Invoice.paid.minimum(:paid_at).beginning_of_month
+    finish = Date.today.beginning_of_month
+    result = []
+    while start < finish
+      timeframe = start ... start.next_month
+      revenue = Invoice.paid.where(paid_at: timeframe).sum(:amount) -
+        SubcontractorPayout.where(created_at: timeframe).sum(:amount)
+      result << [start, revenue]
+      start = start.next_month
+    end
+    result
   end
 
-  def predicted_revenue
-    Float::INFINITY
+  # @return [Array] [Polynomial, number_of_months]
+  def revenue_prediction_polynomial
+    data = revenue_by_months
+    data.each_with_index { |item, i|
+      # item[0] = item[0].to_i
+      item[0] = i + 1
+      if i > 0
+        data[i][1] += data[i-1][1]
+      end
+    }
+    [LagrangePolynomial.build(data), data.size]
+  end
+
+  def predicted_revenue(polynomial, after_months)
+    polynomial[0].substitute(polynomial[1] + after_months) # .substitute(date.to_time.to_i)
   end
 
   def best_clients(top: 5, timeframe: default_timeframe)

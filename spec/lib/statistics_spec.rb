@@ -73,4 +73,32 @@ describe Statistics do
       [@result.id, @result.overdue_days]
     ).to eq [@worst_id, @max_overdue_days]
   end
+
+  it 'predicts revenue' do
+    (1..12).each do |m|
+      Timecop.travel(Date.today - m.months) do
+        10.times do |d|
+          Timecop.travel(d.days) do
+            create(:subcontractor_payout, job: create(:paid_invoice).job)
+          end
+        end
+      end
+    end
+    @current_revenue = Statistics.revenue
+    @polynomial = Statistics.revenue_prediction_polynomial
+    puts @polynomial[0].instance_variable_get(:@coefs).reverse.map(&:to_f).inspect
+
+    expect(
+      @polynomial[1]
+    ).to be > 1
+    expect(
+      Statistics.predicted_revenue(@polynomial, -1)
+    ).to be < @current_revenue
+    expect(
+      @next_month_revenue = Statistics.predicted_revenue(@polynomial, 1)
+    ).to be > @current_revenue
+    expect(
+      @next_year_revenue = Statistics.predicted_revenue(@polynomial, 12)
+    ).to be > @next_month_revenue
+  end
 end
